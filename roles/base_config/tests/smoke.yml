@@ -1,0 +1,13 @@
+# purpose: Smoke test for role base_config
+# maintainer: HybridOps.Studio
+
+- name: Smoke test for role base_config
+  hosts: base_config_test
+  gather_facts: false
+  become: false
+
+  collections:
+    - hybridops.network
+
+  roles:
+    - role: hybridops.network.base_config
