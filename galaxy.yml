@@ -1,36 +1,34 @@
-# purpose: Galaxy metadata for hybridops.network collection
+# purpose: Ansible Galaxy metadata for hybridops.network collection
 # adr: ADR-0606-ansible-collections-release-process
 # maintainer: HybridOps.Studio
 
 namespace: hybridops
 name: network
-version: "0.1.0"
+version: 0.1.0
 
 readme: README.md
 description: >
-  Network automation roles for HybridOps.Studio. Baseline configuration,
-  routing, VLANs, NTP, backups and lightweight compliance checks for lab
-  and brownfield networks.
+  Network automation roles for HybridOps.Studio: baseline configuration, routing, VLANs, NTP, backups, and lightweight compliance checks for lab and brownfield networks.
 
 authors:
-  - HybridOps.Studio
+- HybridOps.Studio
 
 license:
-  - MIT-0
+- MIT-0
+
+min_ansible_version: "2.15"
 
 tags:
-  - hybridops
-  - network
-  - cisco
-  - ios
-  - ios-xe
-  - routing
-  - ospf
-  - bgp
-  - vlan
-  - ntp
-  - backup
-  - compliance
+- hybridops
+- network
+- automation
+- routing
+- bgp
+- ospf
+- vlan
+- ntp
+- backup
+- compliance
 
 homepage: https://docs.hybridops.studio
 documentation: https://docs.hybridops.studio
@@ -40,3 +38,16 @@ issues: https://github.com/hybridops-studio/ansible-collection-network/issues
 dependencies:
   hybridops.common: ">=0.1.0"
   hybridops.helper: ">=0.1.0"
+
+build_ignore:
+- .git
+- .github
+- .tox
+- .venv
+- build
+- dist
+- output
+- tests/output
+- __pycache__
+- .mypy_cache
+- .pytest_cache

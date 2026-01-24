@@ -1,124 +1,83 @@
 # Contributing to `hybridops.network`
 
-`hybridops.network` provides network automation roles tested against **real lab devices** (for example Cisco, Arista, VyOS, pfSense) and emulated environments.
+`hybridops.network` provides network automation roles validated in lab and emulated environments. The scope is practical, testable network automation with vendor-aware behaviour and clear separation of vendor-specific logic.
 
-Roles cover:
+Design and release context is maintained in the HybridOps.Studio documentation site.
 
-- Baseline configuration and hardening.
-- Routing protocols (OSPF, BGP).
-- VLANs and gateway redundancy (HSRP/VRRP).
-- NTP, backups, and lightweight compliance checks.
+## Contribution scope
 
-Contributions are welcome as long as they keep the collection practical, testable, and vendor-aware without being vendor-locked.
+Appropriate changes include:
 
----
+- New roles and tasks for supported platforms (for example Cisco, Arista, VyOS, pfSense).
+- Enhancements to existing roles (features, idempotency, expanded platform support).
+- Test improvements (role-local smoke tests, example topologies, Molecule where applicable).
+- Documentation updates for variables, supported targets, and lab assumptions.
 
-## 1. What to contribute
+Prefer neutral role design with vendor-specific details isolated and documented.
 
-Examples:
+## Development workflow
 
-- New roles or tasks for supported platforms (Cisco, Arista, VyOS, pfSense, etc.).
-- Enhancements to existing roles (additional features, better idempotency, more vendors supported).
-- Improvements to test coverage and example topologies.
-- Documentation updates for role parameters and expected lab setups.
+### Local setup
 
-Changes should keep the collection as **neutral as possible**, with vendor-specific details clearly isolated and documented.
+Use versions compatible with `requirements.txt`:
 
----
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+```
 
-## 2. Development workflow
+### Change guidelines
 
-1. **Fork and branch**
+- Keep changes focused on a single behaviour per pull request.
+- Keep variables explicit; avoid hidden assumptions in defaults.
+- Avoid disruptive defaults; use explicit flags for changes that can affect traffic.
 
-   - Fork the repository.
-   - Create a topic branch:
-     - `feature/<short-description>` or `fix/<short-description>`.
+### Tests
 
-2. **Local setup**
+Role-local smoke tests:
 
-   Use Python and `ansible-core` versions compatible with `requirements.txt`:
+```bash
+cd roles/<role_name>
+ansible-playbook -i tests/inventory.example.ini tests/smoke.yml
+```
 
-   ```bash
-   python3 -m venv .venv
-   . .venv/bin/activate
-   pip install -r requirements.txt
-   ```
+Molecule (where defined):
 
-3. **Make your change**
+```bash
+cd roles/<role_name>
+molecule test
+```
 
-   - Target one clear behaviour per change (for example “add NTP support for platform X”).
-   - Keep variables explicit rather than hiding assumptions in defaults.
-   - Ensure roles can run against a small, documented lab topology.
+Platform integration (via the harness):
 
-4. **Run checks and tests**
+```bash
+# In galaxy-collections-harness
+make workspace.clone
+make collections.sync
+make venv.refresh
+make test ROLE=<role_name>
+```
 
-   From the repo root:
+### Pull requests
 
-   ```bash
-   # Basic hygiene and YAML checks
-   pre-commit run --all-files
-   ```
+Include:
 
-   Role-local smoke tests:
+- Target platform(s) and versions where applicable.
+- Summary of changes and expected impact.
+- Test evidence (smoke and/or Molecule and/or platform integration), including lab type (physical or emulated).
 
-   ```bash
-   cd ansible_collections/hybridops/network/roles/<role_name>
-   ansible-playbook -i tests/inventory.example.ini tests/smoke.yml
-   ```
+## Role expectations
 
-   The example inventory should reference either:
+Each role should provide:
 
-   - Your own lab devices, or
-   - A small emulated lab (for example EVE-NG, containerlab).
+- `roles/<role_name>/tests/smoke.yml`
+- `roles/<role_name>/tests/inventory.example.ini`
 
-   Where Molecule scenarios exist, run:
+Roles should document supported platforms, required connection variables, and any out-of-band dependencies (for example backup servers).
 
-   ```bash
-   cd ansible_collections/hybridops/network/roles/<role_name>
-   molecule test
-   ```
+## Security and safety
 
-   Ansible linting (from the repo root):
-
-   ```bash
-   ansible-lint -c .config/linters/ansible-lint.yml
-   ```
-
-5. **Open a pull request**
-
-   In your PR description:
-
-   - Describe the targeted platforms and any assumptions (OS version, feature sets, lab type).
-   - Summarise what you changed and why.
-   - Include details of how you tested the change (for example “EVE-NG lab with IOS-XE 17.x on two edge routers”).
-
----
-
-## 3. Expectations for roles
-
-Each public role should:
-
-- Provide `tests/smoke.yml` and `tests/inventory.example.ini`.
-- Clearly document:
-  - Supported vendors and versions.
-  - Required connection variables (transport, credentials, ports).
-  - Any dependencies on out-of-band tooling (for example backup servers).
-
-Where possible:
-
-- Keep logic data-driven (for example using per-platform maps) instead of heavy branching.
-- Align naming, variable style, and directory layout with existing roles.
-- Avoid breaking changes to existing variables without a clear reason and documentation.
-
----
-
-## 4. Style, safety, and secrets
-
-- Avoid destructive defaults; use explicit flags for changes that can disrupt traffic.
-- Never commit real credentials, keys, or management IPs.
-- Use variables for anything environment-specific (sites, device names, IP ranges).
-- Keep comments short and focused on non-obvious decisions (for example vendor quirks or protocol edge cases).
-
----
-
-By contributing here, you help build a realistic, lab-tested network automation toolkit that works both inside HybridOps.Studio and in other environments.
+- Do not commit credentials, keys, or management IPs.
+- Consume sensitive values via variables, Vault, or environment lookups.
+- Avoid logging sensitive values in task output.

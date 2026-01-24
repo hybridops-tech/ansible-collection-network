@@ -1,62 +1,35 @@
-# hybridops.network – Network Automation Collection
+# `hybridops.network`
 
-Network automation roles for HybridOps.Studio.  
-The collection focuses on practical workflows for routers and switches: baseline configuration, routing, VLANs, NTP, device backups, and basic compliance checks.
+Network automation roles for routers and switches used by HybridOps.Studio. The collection focuses on practical workflows: baseline configuration, routing, VLANs, NTP, configuration backups, and lightweight compliance checks.
 
-The collection is reusable outside HybridOps.Studio and can target any supported lab or brownfield network.
+Role-level usage, variables, and assumptions are documented in each role’s `README.md`.
 
----
+High-level platform context is maintained at [docs.hybridops.studio](https://docs.hybridops.studio).
 
-## 1. Collection scope
+## Scope
 
-**Collection name:** `hybridops.network`  
-**Galaxy namespace/name:** `hybridops.network` (planned)  
-**Source repository:** [github.com/hybridops-studio/ansible-collection-network](https://github.com/hybridops-studio/ansible-collection-network)
+- Target devices: lab and brownfield networks using supported Ansible network transports (for example `ansible.netcommon.network_cli`).
+- Initial validation focuses on Cisco IOS / IOS-XE style devices; vendor-specific logic is isolated per role where applicable.
+- Roles aim to be vendor-aware without being vendor-locked.
 
-The collection targets:
+## Roles
 
-- Cisco-style network devices (IOS / IOS-XE / similar) via SSH/NETCONF.  
-- Baseline configuration, routing, VLANs, and HA protocols.  
-- Repeatable backups and lightweight compliance checks.
+| Role | Purpose |
+|------|---------|
+| `base_config` | Device baseline (hostname, banners, logging hooks, and common settings). |
+| `compliance_check` | Lightweight intent/compliance checks against running configuration. |
+| `configure_bgp` | Configure BGP neighbours, ASN, and basic policy primitives. |
+| `device_backup` | Capture device configuration backups to a defined backup root. |
+| `hsrp_vrrp` | Configure HSRP/VRRP gateway redundancy. |
+| `ntp` | Configure NTP servers and time source. |
+| `ospf` | Configure OSPF process, areas, and interface participation. |
+| `vlan` | Create VLANs and apply access/trunk port configuration. |
 
-It is consumed by the main HybridOps.Studio repository under `deployment/network_config/` playbooks, and can also be installed in other Ansible projects.
+## Requirements
 
----
-
-## 2. Roles
-
-Current roles:
-
-| Role name          | Purpose                                                              |
-|--------------------|----------------------------------------------------------------------|
-| `base_config`      | Device-wide baseline (hostname, AAA hooks, logging, banners, etc.). |
-| `compliance_check` | Run lightweight intent/compliance checks against running config.     |
-| `configure_bgp`    | Configure BGP neighbours, ASN, and basic policies.                  |
-| `device_backup`    | Take regular text backups of device configuration.                  |
-| `hsrp_vrrp`        | Configure HSRP/VRRP gateway redundancy.                             |
-| `ntp`              | Configure NTP servers and time source.                              |
-| `ospf`             | Configure OSPF areas, interfaces, and router-ids.                   |
-| `vlan`             | Create VLANs and assign access/trunk ports.                         |
-
-Planned additions (not yet committed):
-
-- `interfaces_l3` – routed interface and SVI configuration.  
-- `logging` – central syslog target and severity levels.  
-- `radius_tacacs` – RADIUS/TACACS integration.
-
----
-
-## 3. Requirements
-
-- Ansible **2.15+**.  
-- Python **3.10+** on the control node.  
-- Network OS:
-  - Initially tested with Cisco IOS / IOS-XE (lab images).
-
-Connection requirements:
-
-- `ansible_connection: ansible.netcommon.network_cli` (or equivalent).  
-- Working SSH reachability from the control node.
+- Ansible `ansible-core` 2.15+.
+- Python 3.10+ on the control node.
+- Network connectivity from the control node to targets over the chosen transport (typically SSH).
 
 Example inventory:
 
@@ -72,25 +45,23 @@ ansible_user=netadmin
 ansible_password={{ vault_netadmin_password }}
 ```
 
----
+## Installation
 
-## 4. Installation
-
-From any Ansible project that will use the collection:
+Install from Ansible Galaxy:
 
 ```bash
 ansible-galaxy collection install hybridops.network
 ```
 
-In `collections/requirements.yml`:
+Pin in `collections/requirements.yml`:
 
 ```yaml
 collections:
   - name: hybridops.network
-    version: "*"
+    version: ">=0.1.0"
 ```
 
-Playbook example:
+## Usage
 
 ```yaml
 - name: Apply network baseline
@@ -104,11 +75,9 @@ Playbook example:
     - role: hybridops.network.ntp
 ```
 
----
+## Examples
 
-## 5. Quick examples
-
-### 5.1 Configure OSPF on core routers
+### Configure OSPF
 
 ```yaml
 - name: Configure OSPF on core
@@ -130,7 +99,7 @@ Playbook example:
     - role: hybridops.network.ospf
 ```
 
-### 5.2 Nightly configuration backups
+### Nightly configuration backups
 
 ```yaml
 - name: Nightly device backups
@@ -146,86 +115,16 @@ Playbook example:
     - role: hybridops.network.device_backup
 ```
 
----
+## Testing
 
-## 6. Relationship to HybridOps.Studio
+- Role-local smoke tests are provided under `roles/<role>/tests/` and exercised against a lab inventory.
+- Molecule scenarios may be provided where isolated validation is valuable.
+- Platform integration tests are executed via HybridOps.Studio pipelines and lab inventories.
 
-This collection is maintained as part of the HybridOps.Studio platform.  
-The main platform repository consumes it from Galaxy under `deployment/network_config/` and combines it with NetBox, Proxmox SDN, and evidence helpers for end-to-end scenarios.
+## License
 
-For a complete view of how these roles fit into the wider platform (NetBox as source of truth, SDN, evidence), see the documentation site at [docs.hybridops.studio](https://docs.hybridops.studio).
+- Code: [MIT-0](https://spdx.org/licenses/MIT-0.html)  
+- Documentation & diagrams: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
----
-
-## 7. Testing and CI
-
-Network roles in this collection are validated at multiple levels:
-
-- **Self-contained tests** under `tests/` (for example `tests/inventory.example.ini` and `tests/smoke.yml`) to exercise a single role such as `base_config` or `vlan` against lab devices.
-- **Molecule scenarios** under `molecule/default/` for roles that benefit from container- or lab-based validation, including multi-device or topology-aware tests.
-- **Platform integration tests** in the HybridOps.Studio platform repository, where playbooks under `deployment/network_config/` and CI pipelines exercise `hybridops.network` against real lab devices via NetBox inventories.
-
-A repository-level `Makefile` provides a thin wrapper around Molecule:
-
-- `make test` runs `molecule test` for all roles that have a `molecule/default/` scenario.
-- `make test ROLE=base_config` runs `molecule test` for a single role.
-
-This keeps individual network roles easy to validate while proving the collection against realistic routing, VLAN, and backup workflows.
-
----
-
-## 8. Development and contributions
-
-Repository layout (simplified):
-
-```text
-ansible_collections/hybridops/network/
-├── roles/
-│   ├── base_config/
-│   ├── compliance_check/
-│   ├── configure_bgp/
-│   ├── device_backup/
-│   ├── hsrp_vrrp/
-│   ├── ntp/
-│   ├── ospf/
-│   └── vlan/
-├── plugins/
-└── README.md
-```
-
-Standard Ansible collection practices apply:
-
-- Each role has its own `defaults/`, `vars/`, `tasks/`, and `README.md`.  
-- Integration tests can be added under `tests/` (for example, Molecule scenarios).  
-
-Release process (high level):
-
-1. Update `galaxy.yml` version and changelog.  
-2. Tag the repo (`v0.1.0-network`, `v0.2.0-network`, and so on).  
-3. Build and publish with:
-
-   ```bash
-   ansible-galaxy collection build
-   ansible-galaxy collection publish hybridops-network-<version>.tar.gz
-   ```
-
----
-
-## Releases
-
-This collection is versioned with Semantic Versioning and published to Ansible Galaxy as `hybridops.network`.
-
-Contribution guidelines are documented in `CONTRIBUTING.md` in this repository.
-
-For maintainers, the end-to-end release workflow (versioning, changelog updates, build, publish and evidence capture) follows the standard HybridOps.Studio collections process described in ADR-0606:
-
-- [ADR-0606 – Ansible collections release process](https://docs.hybridops.studio/adr/ADR-0606-ansible-collections-release-process/)
-
----
-
-## 9. Licence
-
-- Code in this collection: **MIT-0**.  
-- Documentation in this repository: **CC BY 4.0**.
-
-See the main HybridOps.Studio repository for project-wide licence details.
+See the [HybridOps.Studio licensing overview](https://docs.hybridops.studio/briefings/legal/licensing/)
+for project-wide licence details, including branding and trademark notes.
