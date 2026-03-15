@@ -1,5 +1,6 @@
 # Python env and cache
 .venv/
+.venv.tmp/
 .tox/
 __pycache__/
 *.py[cod]
@@ -12,11 +13,11 @@ dist/
 build/
 *.tar.gz
 
-# Ansible / Molecule / test output
-.molecule/
+# Ansible / test output
+.ansible/
 .cache/
-tests/output/
 output/
+tests/output/
 
 # Editor / OS noise
 .vscode/

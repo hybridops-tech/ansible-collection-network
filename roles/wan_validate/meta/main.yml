@@ -1,0 +1,18 @@
+---
+# purpose: Ansible role metadata for wan_validate
+# adr: ADR-0115-linux-edge-wan-strongswan-frr
+# maintainer: HybridOps.Tech
+
+galaxy_info:
+  role_name: wan_validate
+  author: HybridOps.Tech
+  description: Validate IPsec, BGP, routes, and reachability for the Linux WAN simulator.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions: ["bookworm", "bullseye"]
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+
+dependencies: []

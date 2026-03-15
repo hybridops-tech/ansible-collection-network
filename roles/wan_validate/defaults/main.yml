@@ -1,0 +1,18 @@
+---
+# purpose: Role defaults for WAN validation (IPsec, BGP, routes, reachability)
+# adr: ADR-0115-linux-edge-wan-strongswan-frr
+# owner: HybridOps.Tech
+# scope: Non-secret defaults only; site-specific values belong in inventory/group_vars
+
+wan_validate_expected_child_sas: 0
+wan_validate_expect_bgp_neighbors: []
+wan_validate_expect_routes: []
+wan_validate_ping_targets: []
+wan_validate_ping_source: ""
+wan_validate_ping_count: 3
+wan_validate_assert_kernel_routes: false
+wan_validate_require_accepted_prefixes: false
+wan_validate_ipsec_retries: 20
+wan_validate_ipsec_delay: 3
+wan_validate_bgp_retries: 120
+wan_validate_bgp_delay: 4

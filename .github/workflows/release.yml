@@ -1,6 +1,6 @@
 # purpose: Publish Ansible collection to Ansible Galaxy on version tag.
 # adr: ADR-0606-ansible-collections-release-process
-# maintainer: HybridOps.Studio
+# maintainer: HybridOps.Tech
 
 name: Publish to Ansible Galaxy
 
@@ -17,10 +17,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -33,7 +35,7 @@ jobs:
       - name: Verify tag matches galaxy.yml version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          GALAXY_VERSION="$(python -c "import yaml; print(yaml.safe_load(open('galaxy.yml'))['version'])")"
+          GALAXY_VERSION="$(python -c \"import yaml; print(yaml.safe_load(open('galaxy.yml'))['version'])\")"
           if [ "${TAG_VERSION}" != "${GALAXY_VERSION}" ]; then
             echo "ERROR: Tag version '${TAG_VERSION}' does not match galaxy.yml version '${GALAXY_VERSION}'."
             exit 1
@@ -41,7 +43,7 @@ jobs:
 
       - name: Build collection
         run: |
-          ansible-galaxy collection build
+          ansible-galaxy collection build --force
 
       - name: Publish to Galaxy
         env:

@@ -1,0 +1,60 @@
+---
+# purpose: Defaults for wan_edge role (strongSwan swanctl + VTI + FRR BGP)
+# maintainer: HybridOps.Tech
+
+wan_edge_pub_if: ""
+
+wan_edge_public_local_ip: ""
+wan_edge_public_peer_ip: ""
+wan_edge_public_aliases: []
+wan_edge_loopbacks: []
+wan_edge_tunnels: []
+
+wan_edge_ipsec:
+  psk: ""
+  proposals: "aes256-sha256-modp2048"
+  esp_proposals: "aes256-sha256"
+  dpd_delay: "30s"
+  dpd_timeout: "120s"
+  start_action: "start"
+  close_action: "restart"
+  dpd_action: "restart"
+
+wan_edge_bgp:
+  local_as: 65010
+  peer_as: 64514
+  router_id: ""
+  neighbors: []
+  peer_groups: []
+  advertise: []
+  import_allow: []
+  export_allow: []
+
+wan_edge_bgp_transit: false
+wan_edge_ipsec_psk_map: {}
+
+wan_edge_packages:
+  - strongswan
+  - strongswan-swanctl
+  - strongswan-starter
+  - frr
+  - frr-pythontools
+  - tcpdump
+  - iproute2
+
+wan_edge_wait_for_tunnels: false
+wan_edge_initiate_retries: 3
+wan_edge_initiate_delay: 5
+
+wan_edge_charon_conf_path: "/etc/strongswan.d/charon/90-wan.conf"
+wan_edge_swanctl_conf_path: "/etc/swanctl/swanctl.conf"
+wan_edge_frr_conf_path: "/etc/frr/frr.conf"
+wan_edge_frr_daemons_path: "/etc/frr/daemons"
+
+wan_edge_sysctls:
+  - key: "net.ipv4.ip_forward"
+    value: "1"
+  - key: "net.ipv4.conf.all.rp_filter"
+    value: "0"
+  - key: "net.ipv4.conf.default.rp_filter"
+    value: "0"

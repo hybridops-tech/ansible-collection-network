@@ -1,0 +1,47 @@
+# purpose: WAN edge smoke test - three-site hub-and-spoke
+# maintainer: HybridOps.Tech
+
+- name: Prepare WAN simulator hosts
+  hosts: wansim
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Preflight | wait for cloud-init and package-manager readiness
+      ansible.builtin.shell: |
+        set -euo pipefail
+        for _ in $(seq 1 120); do
+          cloud_final_state="$(systemctl is-active cloud-final.service 2>/dev/null || true)"
+          if [ -f /var/lib/cloud/instance/boot-finished ] \
+            || [ "$cloud_final_state" = "inactive" ] \
+            || [ "$cloud_final_state" = "failed" ]; then
+            if ! pgrep -x apt >/dev/null 2>&1 \
+              && ! pgrep -x apt-get >/dev/null 2>&1; then
+              exit 0
+            fi
+          fi
+          if [ "$cloud_final_state" = "failed" ] \
+            && ! pgrep -x apt >/dev/null 2>&1 \
+            && ! pgrep -x apt-get >/dev/null 2>&1; then
+            exit 0
+          fi
+          sleep 5
+        done
+        exit 1
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+- name: Configure WAN hub (responder)
+  hosts: wansim_gcp
+  roles:
+    - role: hybridops.network.wan_edge
+
+- name: Configure WAN spokes (initiators)
+  hosts: wansim_edge:wansim_azure
+  roles:
+    - role: hybridops.network.wan_edge
+
+- name: Validate all sites
+  hosts: wansim
+  roles:
+    - role: hybridops.network.wan_validate

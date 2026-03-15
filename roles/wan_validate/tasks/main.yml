@@ -1,0 +1,187 @@
+---
+# purpose: Validate WAN tunnel state (IPsec, BGP, routes, reachability)
+# adr: ADR-0115-linux-edge-wan-strongswan-frr
+# owner: HybridOps.Tech
+# scope: Read-only convergence checks; does not configure services or networking
+
+- name: Preflight | derive effective WAN topology inputs
+  ansible.builtin.set_fact:
+    wan_validate_edge_tunnels: "{{ wan_edge_tunnels | default([], true) }}"
+    wan_validate_edge_loopbacks: "{{ wan_edge_loopbacks | default([], true) }}"
+    wan_validate_edge_bgp: "{{ wan_edge_bgp | default({}, true) }}"
+  changed_when: false
+
+- name: Preflight | derive effective validation controls
+  ansible.builtin.set_fact:
+    wan_validate_expected_child_sas_effective: >-
+      {{
+        wan_validate_expected_child_sas
+        if (wan_validate_expected_child_sas | int) > 0
+        else (wan_validate_edge_tunnels | length)
+      }}
+    wan_validate_expect_routes_effective: >-
+      {{
+        wan_validate_expect_routes
+        if (wan_validate_expect_routes | length) > 0
+        else (wan_validate_edge_bgp.import_allow | default([]))
+      }}
+    wan_validate_bgp_neighbors_all: >-
+      {{
+        wan_validate_expect_bgp_neighbors
+        if (wan_validate_expect_bgp_neighbors | length) > 0
+        else (
+          (wan_validate_edge_bgp.neighbors | default([]))
+          + (
+            wan_validate_edge_bgp.peer_groups
+            | default([])
+            | map(attribute='neighbors')
+            | list
+            | flatten
+            | default([])
+          )
+        ) | unique
+      }}
+    wan_validate_ping_source_effective: >-
+      {{
+        wan_validate_ping_source
+        if (wan_validate_ping_source | length) > 0
+        else (
+          wan_validate_edge_loopbacks[0] | ansible.utils.ipaddr('address')
+          if (wan_validate_edge_loopbacks | length) > 0
+          else ''
+        )
+      }}
+    wan_validate_ping_targets_effective: >-
+      {{
+        wan_validate_ping_targets
+        if (wan_validate_ping_targets | length) > 0
+        else (wan_edge_validation_ping_targets | default([], true))
+      }}
+  changed_when: false
+
+- name: IPsec | wait for CHILD_SAs to establish
+  ansible.builtin.command: swanctl --list-sas
+  register: wan_validate_sas
+  changed_when: false
+  retries: "{{ wan_validate_ipsec_retries }}"
+  delay: "{{ wan_validate_ipsec_delay }}"
+  until: >-
+    (wan_validate_sas.stdout | regex_findall('INSTALLED,\\s+TUNNEL') | length)
+    >= (wan_validate_expected_child_sas_effective | int)
+  become: true
+  when: (wan_validate_expected_child_sas_effective | int) > 0
+
+- name: IPsec | assert expected CHILD_SAs installed
+  ansible.builtin.assert:
+    that:
+      - >-
+        (wan_validate_sas.stdout
+        | regex_findall('INSTALLED,\\s+TUNNEL')
+        | length)
+        >= (wan_validate_expected_child_sas_effective | int)
+    fail_msg: >-
+      Expected {{ wan_validate_expected_child_sas_effective }} CHILD_SAs,
+      found {{ wan_validate_sas.stdout | regex_findall('INSTALLED,\\s+TUNNEL') | length }}.
+  when: (wan_validate_expected_child_sas_effective | int) > 0
+
+- name: IPsec | assert no transient SA states
+  ansible.builtin.assert:
+    that:
+      - wan_validate_sas.stdout is not search('REKEYING')
+      - wan_validate_sas.stdout is not search('DELETING')
+    fail_msg: "IPsec SA is still in a transient state."
+  when: (wan_validate_expected_child_sas_effective | int) > 0
+
+- name: BGP | precheck neighbor reachability
+  ansible.builtin.command: ping -c 1 -W 1 "{{ item }}"
+  loop: "{{ wan_validate_bgp_neighbors_all }}"
+  register: wan_validate_bgp_ping
+  changed_when: false
+  failed_when: wan_validate_bgp_ping.rc != 0
+  when: (wan_validate_bgp_neighbors_all | length) > 0
+
+- name: BGP | wait for each neighbor Established
+  ansible.builtin.command: vtysh -c "show bgp neighbors {{ item }}"
+  loop: "{{ wan_validate_bgp_neighbors_all }}"
+  register: wan_validate_bgp_neighbor_wait
+  changed_when: false
+  retries: "{{ wan_validate_bgp_retries }}"
+  delay: "{{ wan_validate_bgp_delay }}"
+  until: wan_validate_bgp_neighbor_wait.stdout is search('BGP state\\s*=\\s*Established')
+  become: true
+  when: (wan_validate_bgp_neighbors_all | length) > 0
+
+- name: BGP | assert each neighbor Established
+  ansible.builtin.assert:
+    that:
+      - item.stdout is search('BGP state\\s*=\\s*Established')
+    fail_msg: >-
+      BGP neighbor {{ item.item }} is not Established.
+      {{ (item.stdout_lines | select('search', 'BGP state') | list | first) | default('BGP state line not found') }}
+  loop: "{{ wan_validate_bgp_neighbor_wait.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: (wan_validate_bgp_neighbors_all | length) > 0
+
+- name: BGP | assert accepted prefixes when required
+  ansible.builtin.assert:
+    that:
+      - item.stdout is search('[1-9][0-9]*\\s+accepted prefixes')
+    fail_msg: "Neighbor {{ item.item }} has no accepted prefixes."
+  loop: "{{ wan_validate_bgp_neighbor_wait.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - (wan_validate_bgp_neighbors_all | length) > 0
+    - wan_validate_require_accepted_prefixes | bool
+
+- name: BGP | assert no prefix-limit warnings
+  ansible.builtin.assert:
+    that:
+      - item.stdout is not search('prefix-count exceeded')
+    fail_msg: "Neighbor {{ item.item }} has a prefix-limit warning."
+  loop: "{{ wan_validate_bgp_neighbor_wait.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: (wan_validate_bgp_neighbors_all | length) > 0
+
+- name: Routes | collect BGP table
+  ansible.builtin.command: vtysh -c "show bgp ipv4 unicast"
+  register: wan_validate_bgp_table
+  changed_when: false
+  become: true
+
+- name: Routes | assert expected prefixes in BGP table
+  ansible.builtin.assert:
+    that:
+      - wan_validate_bgp_table.stdout is search(item | regex_escape)
+    fail_msg: "Expected prefix is missing from the BGP table: {{ item }}."
+  loop: "{{ wan_validate_expect_routes_effective }}"
+  when: (wan_validate_expect_routes_effective | length) > 0
+
+- name: Routes | collect kernel routes
+  ansible.builtin.command: ip -4 route show table all
+  register: wan_validate_kernel_routes
+  changed_when: false
+  become: true
+  when: wan_validate_assert_kernel_routes | bool
+
+- name: Routes | assert expected prefixes in kernel table
+  ansible.builtin.assert:
+    that:
+      - wan_validate_kernel_routes.stdout is search(item | regex_escape)
+    fail_msg: "Expected prefix is missing from the kernel routing table: {{ item }}."
+  loop: "{{ wan_validate_expect_routes_effective }}"
+  when: wan_validate_assert_kernel_routes | bool
+
+- name: Reachability | ping requested targets
+  ansible.builtin.command: >-
+    ping -c {{ wan_validate_ping_count }} -W 2
+    {% if wan_validate_ping_source_effective | length > 0 %}-I {{ wan_validate_ping_source_effective }}{% endif %}
+    {{ item }}
+  loop: "{{ wan_validate_ping_targets_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  changed_when: false
+  become: true
+  when: (wan_validate_ping_targets_effective | length) > 0

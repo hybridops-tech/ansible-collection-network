@@ -1,53 +1,53 @@
 # purpose: Ansible Galaxy metadata for hybridops.network collection
 # adr: ADR-0606-ansible-collections-release-process
-# maintainer: HybridOps.Studio
+# maintainer: HybridOps.Tech
 
 namespace: hybridops
 name: network
-version: 0.1.0
+version: 0.2.0
 
 readme: README.md
 description: >
-  Network automation roles for HybridOps.Studio: baseline configuration, routing, VLANs, NTP, backups, and lightweight compliance checks for lab and brownfield networks.
+  Legacy Linux WAN simulation and validation roles for HybridOps maintainers,
+  focused on strongSwan, FRR, and repeatable three-node WAN lab paths.
 
 authors:
-- HybridOps.Studio
+  - HybridOps.Tech
 
 license:
-- MIT-0
-
-min_ansible_version: "2.15"
+  - MIT-0
 
 tags:
-- hybridops
-- network
-- automation
-- routing
-- bgp
-- ospf
-- vlan
-- ntp
-- backup
-- compliance
+  - hybridops
+  - networking
+  - linux
+  - wan
+  - ipsec
+  - strongswan
+  - frr
+  - validation
+  - routing
+  - bgp
 
-homepage: https://docs.hybridops.studio
-documentation: https://docs.hybridops.studio
-repository: https://github.com/hybridops-studio/ansible-collection-network
-issues: https://github.com/hybridops-studio/ansible-collection-network/issues
+homepage: https://hybridops.tech
+documentation: https://docs.hybridops.tech
+repository: https://github.com/hybridops-tech/ansible-collection-network
+issues: https://github.com/hybridops-tech/ansible-collection-network/issues
 
 dependencies:
-  hybridops.common: ">=0.1.0"
-  hybridops.helper: ">=0.1.0"
+  ansible.posix: ">=1.5.4"
+  ansible.utils: ">=3.0.0"
 
 build_ignore:
-- .git
-- .github
-- .tox
-- .venv
-- build
-- dist
-- output
-- tests/output
-- __pycache__
-- .mypy_cache
-- .pytest_cache
+  - .ansible
+  - .git
+  - .github
+  - .tox
+  - .venv
+  - build
+  - dist
+  - output
+  - tests/output
+  - __pycache__
+  - .mypy_cache
+  - .pytest_cache

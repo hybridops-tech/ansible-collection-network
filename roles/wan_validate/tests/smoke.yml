@@ -1,0 +1,10 @@
+# purpose: Smoke test for wan_validate role
+# usage: Run via wan_edge smoke test which configures prerequisites
+# standalone: ansible-playbook --syntax-check smoke.yml
+# maintainer: HybridOps.Tech
+
+- name: Smoke | validate WAN endpoints
+  hosts: wansim
+  gather_facts: false
+  roles:
+    - role: hybridops.network.wan_validate

@@ -1,49 +1,21 @@
 # `hybridops.network`
 
-Network automation roles for routers and switches used by HybridOps.Studio. The collection focuses on practical workflows: baseline configuration, routing, VLANs, NTP, configuration backups, and lightweight compliance checks.
+Legacy Linux WAN simulation and validation roles for HybridOps maintainers.
 
-Role-level usage, variables, and assumptions are documented in each role’s `README.md`.
+This collection is intentionally narrow. Production WAN and site-extension paths now live in `hybridops.common` with the VyOS-backed modules and blueprints that HybridOps ships as part of the core runtime. `hybridops.network` remains useful for:
 
-High-level platform context is maintained at [docs.hybridops.studio](https://docs.hybridops.studio).
+- three-node WAN simulation
+- academy and workshop lab exercises
+- brownfield Linux strongSwan/FRR estates that are not yet on the VyOS path
 
-## Scope
-
-- Target devices: lab and brownfield networks using supported Ansible network transports (for example `ansible.netcommon.network_cli`).
-- Initial validation focuses on Cisco IOS / IOS-XE style devices; vendor-specific logic is isolated per role where applicable.
-- Roles aim to be vendor-aware without being vendor-locked.
+Public docs live at <https://docs.hybridops.tech>. The main website is <https://hybridops.tech>.
 
 ## Roles
 
 | Role | Purpose |
 |------|---------|
-| `base_config` | Device baseline (hostname, banners, logging hooks, and common settings). |
-| `compliance_check` | Lightweight intent/compliance checks against running configuration. |
-| `configure_bgp` | Configure BGP neighbours, ASN, and basic policy primitives. |
-| `device_backup` | Capture device configuration backups to a defined backup root. |
-| `hsrp_vrrp` | Configure HSRP/VRRP gateway redundancy. |
-| `ntp` | Configure NTP servers and time source. |
-| `ospf` | Configure OSPF process, areas, and interface participation. |
-| `vlan` | Create VLANs and apply access/trunk port configuration. |
-
-## Requirements
-
-- Ansible `ansible-core` 2.15+.
-- Python 3.10+ on the control node.
-- Network connectivity from the control node to targets over the chosen transport (typically SSH).
-
-Example inventory:
-
-```ini
-[edge]
-edge01 ansible_host=192.0.2.10
-edge02 ansible_host=192.0.2.11
-
-[edge:vars]
-ansible_network_os=cisco.ios.ios
-ansible_connection=ansible.netcommon.network_cli
-ansible_user=netadmin
-ansible_password={{ vault_netadmin_password }}
-```
+| `wan_edge` | Configure a Linux WAN node with strongSwan, VTI interfaces, and FRR eBGP. |
+| `wan_validate` | Validate WAN convergence across IPsec, BGP, routes, and end-to-end reachability. |
 
 ## Installation
 
@@ -53,78 +25,46 @@ Install from Ansible Galaxy:
 ansible-galaxy collection install hybridops.network
 ```
 
-Pin in `collections/requirements.yml`:
+Pin from a `collections/requirements.yml` file:
 
 ```yaml
 collections:
   - name: hybridops.network
-    version: ">=0.1.0"
-```
-
-## Usage
-
-```yaml
-- name: Apply network baseline
-  hosts: edge
-  gather_facts: no
-  collections:
-    - hybridops.network
-
-  roles:
-    - role: hybridops.network.base_config
-    - role: hybridops.network.ntp
-```
-
-## Examples
-
-### Configure OSPF
-
-```yaml
-- name: Configure OSPF on core
-  hosts: core
-  gather_facts: no
-  collections:
-    - hybridops.network
-
-  vars:
-    ospf_process_id: 100
-    ospf_router_id_map:
-      core01: 10.0.255.1
-      core02: 10.0.255.2
-    ospf_networks:
-      - { prefix: "10.0.0.0/24", area: 0 }
-      - { prefix: "10.0.1.0/24", area: 0 }
-
-  roles:
-    - role: hybridops.network.ospf
-```
-
-### Nightly configuration backups
-
-```yaml
-- name: Nightly device backups
-  hosts: all_network_devices
-  gather_facts: no
-  collections:
-    - hybridops.network
-
-  vars:
-    backup_root: "/srv/network-backups"
-
-  roles:
-    - role: hybridops.network.device_backup
 ```
 
 ## Testing
 
-- Role-local smoke tests are provided under `roles/<role>/tests/` and exercised against a lab inventory.
-- Molecule scenarios may be provided where isolated validation is valuable.
-- Platform integration tests are executed via HybridOps.Studio pipelines and lab inventories.
+The maintainer path for this collection is HyOps-native:
+
+```bash
+hyops test role hybridops.network.wan_edge \
+  --env quickTest \
+  --workspace-root /path/to/hybridops-collections-src/collections/dev/workspace \
+  --inventory-file /path/to/ansible-collection-network/roles/wan_edge/tests/inventories/wansim/hosts.ini
+```
+
+To stand up the three-VM WAN simulator first:
+
+```bash
+hyops apply --env quickTest \
+  --module platform/onprem/platform-vm \
+  --state-instance wan_sim_vms \
+  --inputs roles/wan_edge/tests/fixtures/wan_sim_vms.quicktest.inputs.yml
+```
+
+That fixture provisions:
+
+- `edge-sim` on `10.10.0.132` with WAN underlay `10.50.0.142`
+- `gcp-sim` on `10.10.0.151` with WAN underlay `10.50.0.149`
+- `azure-sim` on `10.10.0.181` with WAN underlay `10.50.0.132`
+
+`wan_edge` smoke includes `wan_validate`, so the full role test proves both configuration and convergence.
+
+## Scope boundary
+
+This collection is not the product-standard WAN shipping path. If you are building or operating the current HybridOps WAN stack, use the VyOS roles and modules from `hybridops.common` and `hybridops-core`.
 
 ## License
 
-- Code: [MIT-0](https://spdx.org/licenses/MIT-0.html)  
-- Documentation & diagrams: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-
-See the [HybridOps.Studio licensing overview](https://docs.hybridops.studio/briefings/legal/licensing/)
-for project-wide licence details, including branding and trademark notes.
+- Code: [MIT-0](https://spdx.org/licenses/MIT-0.html)
+- Documentation: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)

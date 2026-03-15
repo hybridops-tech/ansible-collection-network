@@ -1,0 +1,60 @@
+name_prefix: qt
+context_id: wan-sim
+vm_role: platform-vm
+template_vm_id: 107
+template_key: ubuntu-24.04
+build_image: false
+cpu_cores: 2
+memory_mb: 4096
+disk_size_gb: 40
+guest_agent_enabled: true
+cpu_type: host
+os_type: l26
+on_boot: true
+dns_domain: hybzone.local
+dns_servers:
+  - 8.8.8.8
+tags:
+  - platform
+  - onprem
+  - wan-sim
+require_ipam: false
+allow_vm_set_replace: false
+post_apply_ssh_readiness:
+  enabled: true
+  required: true
+  target_user: opsadmin
+  connectivity_wait_s: 300
+  ssh_proxy_jump_auto: true
+ssh_username: opsadmin
+vms:
+  edge-sim:
+    role: wan-sim-edge
+    interfaces:
+      - bridge: vnetmgmt
+        ipv4:
+          address: 10.10.0.132/24
+          gateway: 10.10.0.1
+      - bridge: vnetlab
+        ipv4:
+          address: 10.50.0.142/24
+  gcp-sim:
+    role: wan-sim-hub
+    interfaces:
+      - bridge: vnetmgmt
+        ipv4:
+          address: 10.10.0.151/24
+          gateway: 10.10.0.1
+      - bridge: vnetlab
+        ipv4:
+          address: 10.50.0.149/24
+  azure-sim:
+    role: wan-sim-azure
+    interfaces:
+      - bridge: vnetmgmt
+        ipv4:
+          address: 10.10.0.181/24
+          gateway: 10.10.0.1
+      - bridge: vnetlab
+        ipv4:
+          address: 10.50.0.132/24
