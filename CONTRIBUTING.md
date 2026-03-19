@@ -2,7 +2,7 @@
 
 `hybridops.network` provides network automation roles validated in lab and emulated environments. The scope is practical, testable network automation with vendor-aware behaviour and clear separation of vendor-specific logic.
 
-Design and release context is maintained in the HybridOps.Studio documentation site.
+Design and release context is maintained in the HybridOps.Tech documentation site.
 
 ## Contribution scope
 

@@ -1,8 +1,8 @@
 # `hybridops.network`
 
-Legacy Linux WAN simulation and validation roles for HybridOps maintainers.
+Linux WAN simulation and validation roles for lab and brownfield environments.
 
-This collection is intentionally narrow. Production WAN and site-extension paths now live in `hybridops.common` with the VyOS-backed modules and blueprints that HybridOps ships as part of the core runtime. `hybridops.network` remains useful for:
+This collection is intentionally narrow. The primary WAN and site-extension path uses VyOS-backed roles and modules in `hybridops.common` and `hybridops-core`. `hybridops.network` is useful for:
 
 - three-node WAN simulation
 - academy and workshop lab exercises
@@ -34,7 +34,7 @@ collections:
 
 ## Testing
 
-The maintainer path for this collection is HyOps-native:
+Run role tests with HybridOps:
 
 ```bash
 hyops test role hybridops.network.wan_edge \
@@ -62,7 +62,7 @@ That fixture provisions:
 
 ## Scope boundary
 
-This collection is not the product-standard WAN shipping path. If you are building or operating the current HybridOps WAN stack, use the VyOS roles and modules from `hybridops.common` and `hybridops-core`.
+This collection covers Linux-based WAN simulation and brownfield paths. For the HybridOps WAN stack, use the VyOS roles and modules from `hybridops.common` and `hybridops-core`.
 
 ## License
 
