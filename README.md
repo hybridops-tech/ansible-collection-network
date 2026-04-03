@@ -30,6 +30,7 @@ Pin from a `collections/requirements.yml` file:
 ```yaml
 collections:
   - name: hybridops.network
+    version: ">=0.1.0"
 ```
 
 ## Testing
