@@ -8,8 +8,8 @@ version: 0.1.0
 
 readme: README.md
 description: >
-  Legacy Linux WAN simulation and validation roles for HybridOps maintainers,
-  focused on strongSwan, FRR, and repeatable three-node WAN lab paths.
+  Linux WAN simulation and validation roles for HybridOps, focused on
+  strongSwan, FRR, and repeatable three-node WAN lab paths.
 
 authors:
   - HybridOps.Tech
@@ -28,6 +28,10 @@ tags:
   - validation
   - routing
   - bgp
+  - proxmox
+  - hybrid
+  - vyos
+  - lab
 
 homepage: https://hybridops.tech
 documentation: https://docs.hybridops.tech
