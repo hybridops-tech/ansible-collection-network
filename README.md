@@ -5,7 +5,7 @@ Linux WAN simulation and validation roles for lab and brownfield environments.
 This collection is intentionally narrow. The primary WAN and site-extension path uses VyOS-backed roles and modules in `hybridops.common` and `hybridops-core`. `hybridops.network` is useful for:
 
 - three-node WAN simulation
-- academy and workshop lab exercises
+- lab and workshop exercises
 - brownfield Linux strongSwan/FRR estates that are not yet on the VyOS path
 
 Public docs live at <https://docs.hybridops.tech>. The main website is <https://hybridops.tech>.
